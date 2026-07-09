@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum SenderType {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  fullName     String
+  email        String        @unique
+  passwordHash String
+  role         Role          @default(USER)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  chatSessions ChatSession[]
+  feedbacks    Feedback[]
+}
+
+model Department {
+  id          Int               @id @default(autoincrement())
+  name        String            @unique
+  description String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  categories  ServiceCategory[]
+  services    GovernmentService[]
+}
+
+model ServiceCategory {
+  id           Int                @id @default(autoincrement())
+  departmentId Int
+  name         String
+  description  String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  department   Department         @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  services     GovernmentService[]
+
+  @@unique([departmentId, name])
+  @@index([departmentId])
+}
+
+model GovernmentService {
+  id                 Int                  @id @default(autoincrement())
+  departmentId       Int
+  categoryId         Int
+  title              String
+  description        String
+  eligibility        String?
+  requiredDocuments  String?
+  processSteps       String?
+  feeInfo            String?
+  officeInfo         String?
+  isActive           Boolean              @default(true)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  department         Department           @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  category           ServiceCategory      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  knowledgeEntries   KnowledgeBaseEntry[]
+
+  @@index([departmentId])
+  @@index([categoryId])
+  @@index([title])
+}
+
+model KnowledgeBaseEntry {
+  id         Int               @id @default(autoincrement())
+  serviceId  Int
+  title      String
+  content    String
+  sourceNote String?
+  isVerified Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  service    GovernmentService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId])
+  @@index([title])
+}
+
+model ChatSession {
+  id           Int           @id @default(autoincrement())
+  userId       Int
+  sessionTitle String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages     ChatMessage[]
+
+  @@index([userId])
+}
+
+model ChatMessage {
+  id           Int         @id @default(autoincrement())
+  sessionId    Int
+  senderType   SenderType
+  messageText  String
+  usedContext  String?
+  createdAt    DateTime    @default(now())
+
+  session      ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  feedback     Feedback?
+
+  @@index([sessionId])
+  @@index([senderType])
+}
+
+model Feedback {
+  id            Int         @id @default(autoincrement())
+  chatMessageId Int         @unique
+  userId        Int
+  rating        Int
+  comment       String?
+  createdAt     DateTime    @default(now())
+
+  chatMessage   ChatMessage @relation(fields: [chatMessageId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([rating])
+}

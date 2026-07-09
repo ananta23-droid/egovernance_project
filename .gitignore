@@ -1,0 +1,111 @@
+# =========================
+# Environment Variables
+# =========================
+
+.env
+.env.*
+!.env.example
+
+
+# =========================
+# Node.js Dependencies
+# =========================
+
+node_modules/
+*/node_modules/
+
+
+# =========================
+# Build Files
+# =========================
+
+dist/
+build/
+.next/
+out/
+
+
+# =========================
+# Logs
+# =========================
+
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# =========================
+# Database Files
+# =========================
+
+*.db
+*.sqlite
+*.sqlite3
+
+
+# =========================
+# Prisma
+# =========================
+
+backend/prisma/*.db
+
+
+# =========================
+# Testing / Coverage
+# =========================
+
+coverage/
+.nyc_output/
+
+
+# =========================
+# IDE / Editor Files
+# =========================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+
+# =========================
+# Operating System Files
+# =========================
+
+.DS_Store
+Thumbs.db
+
+
+# =========================
+# Temporary Files
+# =========================
+
+*.tmp
+*.temp
+.cache/
+
+
+# =========================
+# Frontend (Vite)
+# =========================
+
+frontend/.vite/
+
+
+# =========================
+# Backend Runtime
+# =========================
+
+backend/uploads/
+backend/logs/
+
+
+# =========================
+# Secret Keys
+# =========================
+
+*.pem
+*.key
+*.crt
