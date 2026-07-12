@@ -1,27 +1,21 @@
 const express = require("express");
 const authRoutes = require("./authRoutes");
+const departmentRoutes = require("./departmentRoutes");
+const categoryRoutes = require("./categoryRoutes");
+const governmentServiceRoutes = require("./governmentServiceRoutes");
 const { authenticate } = require("../middleware/authMiddleware");
 const { authorizeRoles } = require("../middleware/authorizeMiddleware");
 
 const router = express.Router();
 
 router.use("/auth", authRoutes);
+router.use("/departments", departmentRoutes);
+router.use("/categories", categoryRoutes);
+router.use("/services", governmentServiceRoutes);
 
-// Auth check
-router.get("/auth/me", authenticate, (req, res) => {
-  return res.status(200).json({
-    success: true,
-    message: "Protected route accessed.",
-    data: { user: req.user },
-  });
-});
-
-// Admin-only test endpoint for Day 4
+// existing test route
 router.get("/admin/test", authenticate, authorizeRoles("ADMIN"), (req, res) => {
-  return res.status(200).json({
-    success: true,
-    message: "Welcome Admin. Authorization is working.",
-  });
+  res.status(200).json({ success: true, message: "Welcome Admin. Authorization is working." });
 });
 
 module.exports = router;
