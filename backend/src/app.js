@@ -1,11 +1,18 @@
 const express = require("express");
+const cors = require("cors");
 const routes = require("./routes");
 
 const app = express();
 
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
-// Root route (add this)
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
@@ -14,7 +21,10 @@ app.get("/", (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  res.status(200).json({ success: true, message: "Server is healthy." });
+  res.status(200).json({
+    success: true,
+    message: "Server is healthy.",
+  });
 });
 
 app.use("/api/v1", routes);
@@ -27,6 +37,7 @@ app.use((req, res) => {
   });
 });
 
+// Error handler
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
