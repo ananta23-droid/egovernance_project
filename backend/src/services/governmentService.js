@@ -15,16 +15,37 @@ const getServices = async (query) => {
   const limitNum = Number(limit) || 10;
   const skip = (pageNum - 1) * limitNum;
 
+  // Convert query string ("true"/"false") to a boolean
+  const includeInactiveFlag = String(includeInactive) === "true";
+
   const where = {};
 
-  if (!includeInactive) where.isActive = true;
-  if (departmentId) where.departmentId = Number(departmentId);
-  if (categoryId) where.categoryId = Number(categoryId);
+  if (!includeInactiveFlag) {
+    where.isActive = true;
+  }
+
+  if (departmentId) {
+    where.departmentId = Number(departmentId);
+  }
+
+  if (categoryId) {
+    where.categoryId = Number(categoryId);
+  }
 
   if (search) {
     where.OR = [
-      { title: { contains: search, mode: "insensitive" } },
-      { description: { contains: search, mode: "insensitive" } },
+      {
+        title: {
+          contains: search,
+          mode: "insensitive",
+        },
+      },
+      {
+        description: {
+          contains: search,
+          mode: "insensitive",
+        },
+      },
     ];
   }
 
@@ -33,10 +54,22 @@ const getServices = async (query) => {
       where,
       skip,
       take: limitNum,
-      orderBy: { id: "desc" },
+      orderBy: {
+        id: "desc",
+      },
       include: {
-        department: { select: { id: true, name: true } },
-        category: { select: { id: true, name: true } },
+        department: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     }),
     prisma.governmentService.count({ where }),
@@ -57,31 +90,60 @@ const getServiceById = async (id) => {
   const service = await prisma.governmentService.findUnique({
     where: { id },
     include: {
-      department: { select: { id: true, name: true } },
-      category: { select: { id: true, name: true } },
+      department: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
       knowledgeEntries: true,
     },
   });
 
-  if (!service) throw new ApiError(404, "Service not found.");
+  if (!service) {
+    throw new ApiError(404, "Service not found.");
+  }
+
   return service;
 };
 
 const createService = async (payload) => {
   const [department, category] = await Promise.all([
-    prisma.department.findUnique({ where: { id: payload.departmentId } }),
-    prisma.serviceCategory.findUnique({ where: { id: payload.categoryId } }),
+    prisma.department.findUnique({
+      where: { id: payload.departmentId },
+    }),
+    prisma.serviceCategory.findUnique({
+      where: { id: payload.categoryId },
+    }),
   ]);
 
-  if (!department) throw new ApiError(404, "Department not found.");
-  if (!category) throw new ApiError(404, "Category not found.");
+  if (!department) {
+    throw new ApiError(404, "Department not found.");
+  }
 
-  return prisma.governmentService.create({ data: payload });
+  if (!category) {
+    throw new ApiError(404, "Category not found.");
+  }
+
+  return prisma.governmentService.create({
+    data: payload,
+  });
 };
 
 const updateService = async (id, payload) => {
-  const existing = await prisma.governmentService.findUnique({ where: { id } });
-  if (!existing) throw new ApiError(404, "Service not found.");
+  const existing = await prisma.governmentService.findUnique({
+    where: { id },
+  });
+
+  if (!existing) {
+    throw new ApiError(404, "Service not found.");
+  }
 
   return prisma.governmentService.update({
     where: { id },
@@ -90,10 +152,17 @@ const updateService = async (id, payload) => {
 };
 
 const deleteService = async (id) => {
-  const existing = await prisma.governmentService.findUnique({ where: { id } });
-  if (!existing) throw new ApiError(404, "Service not found.");
+  const existing = await prisma.governmentService.findUnique({
+    where: { id },
+  });
 
-  return prisma.governmentService.delete({ where: { id } });
+  if (!existing) {
+    throw new ApiError(404, "Service not found.");
+  }
+
+  return prisma.governmentService.delete({
+    where: { id },
+  });
 };
 
 module.exports = {
