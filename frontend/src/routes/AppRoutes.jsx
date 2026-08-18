@@ -1,35 +1,43 @@
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+import App from "../App";
+import HomePage from "../pages/public/HomePage";
 import ServicesPage from "../pages/public/ServicesPage";
 import ServiceDetailPage from "../pages/public/ServiceDetailPage";
-import AdminLoginPage from "../pages/admin/AdminLoginPage";
-import DepartmentsPage from "../pages/admin/DepartmentsPage";
-import CategoriesPage from "../pages/admin/CategoriesPage";
-import ServicesManagePage from "../pages/admin/ServiceManagePage";
-import AdminLayout from "../layouts/AdminLayout";
-import ProtectedRoute from "../components/common/ProtectedRoute";
+import ApplicationFormPage from "../pages/public/ApplicationFormPage";
+import ApplicationTrackingPage from "../pages/public/ApplicationTrackingPage";
+import CitizenDashboardPage from "../pages/public/CitizenDashboardPage";
+import LoginPage from "../pages/public/LoginPage";
+import RegisterPage from "../pages/public/RegisterPage";
 
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/services" replace />} />
-      <Route path="/services" element={<ServicesPage />} />
-      <Route path="/services/:id" element={<ServiceDetailPage />} />
+      <Route element={<App />}>
+        {/* Page 1: Home */}
+        <Route path="/" element={<HomePage />} />
 
-      <Route path="/admin/login" element={<AdminLoginPage />} />
+        {/* Page 2: Services & Details/Application */}
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/services/:id" element={<ServiceDetailPage />} />
+        <Route path="/services/:id/apply" element={<ApplicationFormPage />} />
 
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute adminOnly>
-            <AdminLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to="/admin/departments" replace />} />
-        <Route path="departments" element={<DepartmentsPage />} />
-        <Route path="categories" element={<CategoriesPage />} />
-        <Route path="services" element={<ServicesManagePage />} />
+        {/* Page 3: Track Application Status */}
+        <Route path="/track-status" element={<ApplicationTrackingPage />} />
+        <Route path="/track-status/:appNumber" element={<ApplicationTrackingPage />} />
+        <Route path="/track" element={<ApplicationTrackingPage />} />
+        <Route path="/track/:appNumber" element={<ApplicationTrackingPage />} />
+
+        {/* Page 4: My Applications */}
+        <Route path="/my-applications" element={<CitizenDashboardPage />} />
+        <Route path="/dashboard" element={<CitizenDashboardPage />} />
+
+        {/* Page 5: Citizen Signup */}
+        <Route path="/signup" element={<RegisterPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+
+        {/* Page 6: Citizen Login */}
+        <Route path="/login" element={<LoginPage />} />
       </Route>
     </Routes>
   );
