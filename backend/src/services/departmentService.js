@@ -1,8 +1,15 @@
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/apiError");
+const isPrismaConnectionError = require("../utils/isPrismaConnectionError");
+const { getFallbackDepartments } = require("../data/fallbackCatalog");
 
 const getAllDepartments = async () => {
-  return prisma.department.findMany({ orderBy: { id: "asc" } });
+  try {
+    return await prisma.department.findMany({ orderBy: { id: "asc" } });
+  } catch (error) {
+    if (!isPrismaConnectionError(error)) throw error;
+    return getFallbackDepartments();
+  }
 };
 
 const createDepartment = async (payload) => {

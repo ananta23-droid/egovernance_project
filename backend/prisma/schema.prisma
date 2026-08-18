@@ -7,74 +7,61 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  USER
-  ADMIN
-}
-
-enum SenderType {
-  USER
-  ASSISTANT
-  SYSTEM
-}
-
 model User {
-  id           Int           @id @default(autoincrement())
+  id           Int                  @id @default(autoincrement())
   fullName     String
-  email        String        @unique
+  email        String               @unique
   passwordHash String
-  role         Role          @default(USER)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-
+  role         Role                 @default(USER)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
   chatSessions ChatSession[]
   feedbacks    Feedback[]
+  applications ServiceApplication[]
 }
 
 model Department {
-  id          Int               @id @default(autoincrement())
-  name        String            @unique
+  id          Int                 @id @default(autoincrement())
+  name        String              @unique
   description String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-
-  categories  ServiceCategory[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
   services    GovernmentService[]
+  categories  ServiceCategory[]
 }
 
 model ServiceCategory {
-  id           Int                @id @default(autoincrement())
+  id           Int                 @id @default(autoincrement())
   departmentId Int
   name         String
   description  String?
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
-
-  department   Department         @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
   services     GovernmentService[]
+  department   Department          @relation(fields: [departmentId], references: [id])
 
   @@unique([departmentId, name])
   @@index([departmentId])
 }
 
 model GovernmentService {
-  id                 Int                  @id @default(autoincrement())
-  departmentId       Int
-  categoryId         Int
-  title              String
-  description        String
-  eligibility        String?
-  requiredDocuments  String?
-  processSteps       String?
-  feeInfo            String?
-  officeInfo         String?
-  isActive           Boolean              @default(true)
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-
-  department         Department           @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  category           ServiceCategory      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  knowledgeEntries   KnowledgeBaseEntry[]
+  id                Int                  @id @default(autoincrement())
+  departmentId      Int
+  categoryId        Int
+  title             String
+  description       String
+  eligibility       String?
+  requiredDocuments String?
+  processSteps      String?
+  feeInfo           String?
+  officeInfo        String?
+  isActive          Boolean              @default(true)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  category          ServiceCategory      @relation(fields: [categoryId], references: [id])
+  department        Department           @relation(fields: [departmentId], references: [id])
+  knowledgeEntries  KnowledgeBaseEntry[]
+  applications      ServiceApplication[]
 
   @@index([departmentId])
   @@index([categoryId])
@@ -90,11 +77,34 @@ model KnowledgeBaseEntry {
   isVerified Boolean           @default(true)
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
-
   service    GovernmentService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   @@index([serviceId])
   @@index([title])
+}
+
+model ServiceApplication {
+  id                Int               @id @default(autoincrement())
+  applicationNumber String            @unique
+  userId            Int?
+  serviceId         Int
+  status            ApplicationStatus @default(SUBMITTED)
+  applicantName     String
+  applicantEmail    String?
+  applicantPhone    String?
+  formData          Json
+  documents         Json
+  appointment       Json?
+  statusHistory     Json
+  submittedAt       DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  user              User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  service           GovernmentService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([serviceId])
+  @@index([applicationNumber])
+  @@index([status])
 }
 
 model ChatSession {
@@ -103,23 +113,21 @@ model ChatSession {
   sessionTitle String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages     ChatMessage[]
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model ChatMessage {
-  id           Int         @id @default(autoincrement())
-  sessionId    Int
-  senderType   SenderType
-  messageText  String
-  usedContext  String?
-  createdAt    DateTime    @default(now())
-
-  session      ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  feedback     Feedback?
+  id          Int         @id @default(autoincrement())
+  sessionId   Int
+  senderType  SenderType
+  messageText String
+  usedContext String?
+  createdAt   DateTime    @default(now())
+  session     ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  feedback    Feedback?
 
   @@index([sessionId])
   @@index([senderType])
@@ -132,10 +140,31 @@ model Feedback {
   rating        Int
   comment       String?
   createdAt     DateTime    @default(now())
-
   chatMessage   ChatMessage @relation(fields: [chatMessageId], references: [id], onDelete: Cascade)
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([rating])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum SenderType {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  PROCESSING
+  ACTION_REQUIRED
+  APPROVED
+  REJECTED
+  COMPLETED
 }

@@ -3,6 +3,18 @@ const bcrypt = require("bcrypt");
 
 const prisma = new PrismaClient();
 
+/**
+ * Find-or-create helper for GovernmentService (title is not @unique, so upsert won't work).
+ * Uses findFirst to check existence, only creates if absent.
+ */
+async function upsertService(data) {
+  const existing = await prisma.governmentService.findFirst({
+    where: { title: data.title },
+  });
+  if (existing) return existing;
+  return prisma.governmentService.create({ data });
+}
+
 async function main() {
   const adminPasswordHash = await bcrypt.hash("Admin@123", 10);
 
@@ -71,61 +83,59 @@ async function main() {
     },
   });
 
-  const citizenshipService = await prisma.governmentService.create({
-    data: {
-      departmentId: homeDept.id,
-      categoryId: citizenshipCategory.id,
-      title: "Apply for Citizenship Certificate",
-      description: "Application process for obtaining Nepalese citizenship certificate.",
-      eligibility: "Eligible Nepalese citizens as per prevailing law.",
-      requiredDocuments: "Ward recommendation, birth proof, parent citizenship details.",
-      processSteps: "Submit application at DAO -> verification -> certificate issuance.",
-      feeInfo: "As per current DAO guidelines.",
-      officeInfo: "District Administration Office (DAO).",
-    },
+  const citizenshipService = await upsertService({
+    departmentId: homeDept.id,
+    categoryId: citizenshipCategory.id,
+    title: "Apply for Citizenship Certificate",
+    description: "Application process for obtaining Nepalese citizenship certificate.",
+    eligibility: "Eligible Nepalese citizens as per prevailing law.",
+    requiredDocuments: "Ward recommendation, birth proof, parent citizenship details.",
+    processSteps: "Submit application at DAO -> verification -> certificate issuance.",
+    feeInfo: "As per current DAO guidelines.",
+    officeInfo: "District Administration Office (DAO).",
   });
 
-  await prisma.governmentService.create({
-    data: {
-      departmentId: homeDept.id,
-      categoryId: passportCategory.id,
-      title: "Apply for e-Passport",
-      description: "Apply for a new Nepal e-passport through designated offices.",
-      eligibility: "Nepalese citizens with valid citizenship document.",
-      requiredDocuments: "Citizenship certificate, photos, old passport (if renewal).",
-      processSteps: "Online pre-enrollment -> office visit -> biometrics -> issuance.",
-      feeInfo: "Standard/express fee as published by passport department.",
-      officeInfo: "Department of Passports / designated district offices.",
-    },
+  await upsertService({
+    departmentId: homeDept.id,
+    categoryId: passportCategory.id,
+    title: "Apply for e-Passport",
+    description: "Apply for a new Nepal e-passport through designated offices.",
+    eligibility: "Nepalese citizens with valid citizenship document.",
+    requiredDocuments: "Citizenship certificate, photos, old passport (if renewal).",
+    processSteps: "Online pre-enrollment -> office visit -> biometrics -> issuance.",
+    feeInfo: "Standard/express fee as published by passport department.",
+    officeInfo: "Department of Passports / designated district offices.",
   });
 
-  await prisma.governmentService.create({
-    data: {
-      departmentId: homeDept.id,
-      categoryId: licenseCategory.id,
-      title: "Apply for Driving License",
-      description: "Apply for a new driving license in Nepal.",
-      eligibility: "Minimum required age and successful completion of process.",
-      requiredDocuments: "Citizenship card copy, medical report, application form.",
-      processSteps: "Online form -> written test -> trial -> license issuance.",
-      feeInfo: "As per Transport Management Office rates.",
-      officeInfo: "Department/Office of Transport Management.",
-    },
+  await upsertService({
+    departmentId: homeDept.id,
+    categoryId: licenseCategory.id,
+    title: "Apply for Driving License",
+    description: "Apply for a new driving license in Nepal.",
+    eligibility: "Minimum required age and successful completion of process.",
+    requiredDocuments: "Citizenship card copy, medical report, application form.",
+    processSteps: "Online form -> written test -> trial -> license issuance.",
+    feeInfo: "As per Transport Management Office rates.",
+    officeInfo: "Department/Office of Transport Management.",
   });
 
-  await prisma.knowledgeBaseEntry.createMany({
-    data: [
-      {
+  // Only create knowledge entry if none exists for this service
+  const existingKb = await prisma.knowledgeBaseEntry.findFirst({
+    where: { serviceId: citizenshipService.id },
+  });
+  if (!existingKb) {
+    await prisma.knowledgeBaseEntry.create({
+      data: {
         serviceId: citizenshipService.id,
         title: "Citizenship Basic Guidance",
         content:
           "Citizenship applications are processed through District Administration Office. Applicants must provide required identity and recommendation documents.",
         sourceNote: "Initial prototype curated content",
       },
-    ],
-  });
+    });
+  }
 
-  console.log("✅ Seed data inserted.");
+  console.log("✅ Seed data inserted (idempotent — no duplicates created).");
 }
 
 main()

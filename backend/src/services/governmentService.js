@@ -1,5 +1,10 @@
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/apiError");
+const isPrismaConnectionError = require("../utils/isPrismaConnectionError");
+const {
+  getFallbackServices,
+  getFallbackServiceById,
+} = require("../data/fallbackCatalog");
 
 const getServices = async (query) => {
   const {
@@ -49,31 +54,39 @@ const getServices = async (query) => {
     ];
   }
 
-  const [items, total] = await Promise.all([
-    prisma.governmentService.findMany({
-      where,
-      skip,
-      take: limitNum,
-      orderBy: {
-        id: "desc",
-      },
-      include: {
-        department: {
-          select: {
-            id: true,
-            name: true,
+  let items;
+  let total;
+
+  try {
+    [items, total] = await Promise.all([
+      prisma.governmentService.findMany({
+        where,
+        skip,
+        take: limitNum,
+        orderBy: {
+          id: "desc",
+        },
+        include: {
+          department: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
-        category: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    }),
-    prisma.governmentService.count({ where }),
-  ]);
+      }),
+      prisma.governmentService.count({ where }),
+    ]);
+  } catch (error) {
+    if (!isPrismaConnectionError(error)) throw error;
+    return getFallbackServices(query);
+  }
 
   return {
     items,
@@ -87,24 +100,31 @@ const getServices = async (query) => {
 };
 
 const getServiceById = async (id) => {
-  const service = await prisma.governmentService.findUnique({
-    where: { id },
-    include: {
-      department: {
-        select: {
-          id: true,
-          name: true,
+  let service;
+
+  try {
+    service = await prisma.governmentService.findUnique({
+      where: { id },
+      include: {
+        department: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
-      },
-      category: {
-        select: {
-          id: true,
-          name: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
+        knowledgeEntries: true,
       },
-      knowledgeEntries: true,
-    },
-  });
+    });
+  } catch (error) {
+    if (!isPrismaConnectionError(error)) throw error;
+    service = getFallbackServiceById(id);
+  }
 
   if (!service) {
     throw new ApiError(404, "Service not found.");
